@@ -10,7 +10,7 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
             let mut digit_words = find_digit_words(l);
 
             l.chars().enumerate().for_each(|(i, c)| {
-                if let Some(_) = c.to_digit(10) {
+                if c.is_ascii_digit() {
                     digit_words.insert(i, c);
                 }
             });
@@ -24,11 +24,9 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
             let dw_max_index = digit_words.keys().max();
             if digit_words.len() == 1 {
                 digit_str.push(first_letter);
-            } else {
-                if let Some(dw_max_index) = dw_max_index {
-                    let c = digit_words.get(&dw_max_index).unwrap().to_owned();
-                    digit_str.push(c);
-                }
+            } else if let Some(dw_max_index) = dw_max_index {
+                let c = digit_words.get(dw_max_index).unwrap().to_owned();
+                digit_str.push(c);
             }
 
             digit_str.parse::<u32>().unwrap()

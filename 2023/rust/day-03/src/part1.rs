@@ -17,12 +17,12 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
 }
 
 fn is_part_number(
-    v_specials: &Vec<SpecialsInLine>,
+    v_specials: &[SpecialsInLine],
     line_num: &usize,
     number_meta: &NumberMeta,
     total_lines: usize,
 ) -> bool {
-    let line_num = line_num.clone();
+    let line_num = *line_num;
     let mut starting = 0;
     if number_meta.start_index != 0 {
         starting = number_meta.start_index - 1;
@@ -47,15 +47,11 @@ fn is_part_number(
         is_part_number = bottom_special_line.iter().any(|i| find_range.contains(i));
     }
 
-    if is_part_number {
-        true
-    } else {
-        false
-    }
+    is_part_number
 }
 
 pub fn solve_aoc(data: &str) -> usize {
-    let lines: Vec<&str> = data.split("\n").filter(|s| !s.is_empty()).collect();
+    let lines: Vec<&str> = data.split('\n').filter(|s| !s.is_empty()).collect();
 
     let total_lines = lines.len();
     let (v_specials, v_digits) = parse_lines(lines);
@@ -89,8 +85,8 @@ fn parse_lines(lines: Vec<&str>) -> (Vec<SpecialsInLine>, Vec<DigitsInLine>) {
         let mut starting_index = 0;
         let mut digit_str = String::new();
 
-        line.chars().into_iter().enumerate().for_each(|(i, c)| {
-            if c.is_digit(10) {
+        line.chars().enumerate().for_each(|(i, c)| {
+            if c.is_ascii_digit() {
                 if digit_str.is_empty() {
                     starting_index = i;
                 }

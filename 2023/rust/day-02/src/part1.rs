@@ -14,7 +14,7 @@ pub struct GameSet {
 }
 
 pub fn solve_aoc(data: &str) -> u32 {
-    let vg = parse_games(&data);
+    let vg = parse_games(data);
 
     vg.into_iter()
         .filter(|gr| validate_game_sets(&gr.sets))
@@ -22,7 +22,7 @@ pub fn solve_aoc(data: &str) -> u32 {
         .sum()
 }
 
-fn validate_game_sets(game_sets: &Vec<GameSet>) -> bool {
+fn validate_game_sets(game_sets: &[GameSet]) -> bool {
     !game_sets
         .iter()
         .any(|s| s.total_red > 12 || s.total_green > 13 || s.total_blue > 14)
@@ -32,14 +32,14 @@ fn parse_games(data: &str) -> Vec<GameRound> {
     data.lines()
         .filter(|l| !l.is_empty())
         .map(|l| {
-            let (id_part, sets_part) = l.split_once(":").unwrap();
+            let (id_part, sets_part) = l.split_once(':').unwrap();
 
-            let (_, game_id) = id_part.split_once(" ").unwrap();
+            let (_, game_id) = id_part.split_once(' ').unwrap();
 
             let games_set: Vec<GameSet> = sets_part
-                .split(";")
+                .split(';')
                 .map(|l| {
-                    let selected_cubes: Vec<&str> = l.split(",").collect();
+                    let selected_cubes: Vec<&str> = l.split(',').collect();
 
                     let mut total_blue = 0;
                     let mut total_red = 0;
@@ -47,7 +47,7 @@ fn parse_games(data: &str) -> Vec<GameRound> {
 
                     selected_cubes.iter().for_each(|cube_str| {
                         let cube_str = cube_str.trim();
-                        let cube_str: Vec<&str> = cube_str.split(" ").collect();
+                        let cube_str: Vec<&str> = cube_str.split(' ').collect();
 
                         match cube_str[1] {
                             "blue" => total_blue = cube_str[0].parse().unwrap(),
@@ -57,13 +57,11 @@ fn parse_games(data: &str) -> Vec<GameRound> {
                         }
                     });
 
-                    let game_set = GameSet {
+                    GameSet {
                         total_blue,
                         total_red,
                         total_green,
-                    };
-
-                    game_set
+                    }
                 })
                 .collect();
 

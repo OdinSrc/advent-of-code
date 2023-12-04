@@ -10,7 +10,7 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
             let mut first_digit = '0';
             let mut last_digit: Option<char> = None;
             l.chars().for_each(|c| {
-                if let Some(_) = c.to_digit(10) {
+                if c.is_ascii_digit() {
                     if digit_str.is_empty() {
                         first_digit = c;
                         digit_str.push(c);

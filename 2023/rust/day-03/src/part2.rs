@@ -21,12 +21,12 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
 }
 
 fn process_part_number(
-    v_specials: &Vec<SpecialsInLine>,
+    v_specials: &[SpecialsInLine],
     line_num: &usize,
     number_meta: &NumberMeta,
     total_lines: usize,
 ) -> Option<(usize, usize)> {
-    let line_num = line_num.clone();
+    let line_num = *line_num;
     let mut starting = 0;
     if number_meta.start_index != 0 {
         starting = number_meta.start_index - 1;
@@ -40,7 +40,7 @@ fn process_part_number(
     let mut special_position = special_line.iter().find(|i| find_range.contains(i));
 
     if let Some(special_position) = special_position {
-        return Some((line_num, special_position.clone()));
+        return Some((line_num, *special_position));
     }
 
     if special_position.is_none() && line_num != 0 {
@@ -48,7 +48,7 @@ fn process_part_number(
 
         special_position = top_special_line.iter().find(|i| find_range.contains(i));
         if let Some(special_position) = special_position {
-            return Some((line_num - 1, special_position.clone()));
+            return Some((line_num - 1, *special_position));
         }
     }
 
@@ -57,7 +57,7 @@ fn process_part_number(
 
         special_position = bottom_special_line.iter().find(|i| find_range.contains(i));
         if let Some(special_position) = special_position {
-            return Some((line_num + 1, special_position.clone()));
+            return Some((line_num + 1, *special_position));
         }
     }
 
@@ -65,7 +65,7 @@ fn process_part_number(
 }
 
 pub fn solve_aoc(data: &str) -> usize {
-    let lines: Vec<&str> = data.split("\n").filter(|s| !s.is_empty()).collect();
+    let lines: Vec<&str> = data.split('\n').filter(|s| !s.is_empty()).collect();
 
     let total_lines = lines.len();
     let (v_specials, v_digits) = parse_lines(lines);
@@ -97,8 +97,8 @@ pub fn solve_aoc(data: &str) -> usize {
         });
 
     final_index
-        .iter()
-        .map(|(_, h)| {
+        .values()
+        .map(|h| {
             let line_total: usize = h
                 .iter()
                 .map(|(_, v)| {
@@ -124,8 +124,8 @@ fn parse_lines(lines: Vec<&str>) -> (Vec<SpecialsInLine>, Vec<DigitsInLine>) {
         let mut starting_index = 0;
         let mut digit_str = String::new();
 
-        line.chars().into_iter().enumerate().for_each(|(i, c)| {
-            if c.is_digit(10) {
+        line.chars().enumerate().for_each(|(i, c)| {
+            if c.is_ascii_digit() {
                 if digit_str.is_empty() {
                     starting_index = i;
                 }
