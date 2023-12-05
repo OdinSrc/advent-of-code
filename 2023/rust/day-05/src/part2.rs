@@ -29,16 +29,10 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     let light = translate_map(water, &water_to_light);
     let temp = translate_map(light, &light_to_temp);
     let hum = translate_map(temp, &temp_to_hum);
-    let loc = translate_map(hum, &hum_to_loc);
+    let mut loc = translate_map(hum, &hum_to_loc);
+    loc.sort_by_key(|range| range.start);
 
-    let mut min = loc[0].start;
-    for r in loc.iter() {
-        if r.start < min {
-            min = r.start;
-        }
-    }
-
-    Ok(min.to_string())
+    Ok(loc[0].start.to_string())
 }
 
 fn translate_map(input: Vec<RangeMap>, data_map: &[DataMap]) -> Vec<RangeMap> {
