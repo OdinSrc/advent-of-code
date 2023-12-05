@@ -42,7 +42,7 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     Ok(min.to_string())
 }
 
-fn translate_map(input: Vec<RangeMap>, data_map: &Vec<DataMap>) -> Vec<RangeMap> {
+fn translate_map(input: Vec<RangeMap>, data_map: &[DataMap]) -> Vec<RangeMap> {
     let mut output: Vec<RangeMap> = Vec::new();
 
     input.iter().for_each(|input_range| {
@@ -106,7 +106,7 @@ fn translate_map(input: Vec<RangeMap>, data_map: &Vec<DataMap>) -> Vec<RangeMap>
 }
 
 fn get_seeds(input: &str) -> Vec<RangeMap> {
-    let (_, seeds_part) = input.split_once(":").expect("Unable to split seeds data");
+    let (_, seeds_part) = input.split_once(':').expect("Unable to split seeds data");
     let parsed: Vec<u64> = seeds_part
         .split(' ')
         .filter_map(|s| s.parse::<u64>().ok())

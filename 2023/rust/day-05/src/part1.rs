@@ -36,7 +36,7 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     Ok(min.to_string())
 }
 
-fn map_to_value(input_value: u64, data_map: &Vec<DataMap>) -> u64 {
+fn map_to_value(input_value: u64, data_map: &[DataMap]) -> u64 {
     for dm in data_map.iter() {
         if input_value >= dm.input_start && input_value <= dm.input_end {
             let gap = input_value - dm.input_start;
@@ -45,11 +45,11 @@ fn map_to_value(input_value: u64, data_map: &Vec<DataMap>) -> u64 {
         }
     }
 
-    return input_value;
+    input_value
 }
 
 fn get_seeds(input: &str) -> Vec<u64> {
-    let (_, seeds_part) = input.split_once(":").expect("Unable to split seeds data");
+    let (_, seeds_part) = input.split_once(':').expect("Unable to split seeds data");
     seeds_part
         .split(' ')
         .filter_map(|s| s.parse::<u64>().ok())
