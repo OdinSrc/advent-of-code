@@ -12,7 +12,6 @@ type RangeMap = Range<u64>;
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
-    println!("Running");
     let parts: Vec<&str> = input.split("\n\n").collect();
     let initial_seeds = get_seeds(parts[0]);
 
