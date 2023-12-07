@@ -37,79 +37,67 @@ impl Hand {
         }
     }
 }
+
 fn calculate_hand_type(cards: &[char]) -> HandType {
     let mut repetition_index: HashMap<char, u8> = HashMap::new();
     cards.iter().for_each(|c| {
         match repetition_index.get(c) {
-            Some(count) => repetition_index.insert(c.to_owned(), count + 1),
-            None => repetition_index.insert(c.to_owned(), 1),
+            Some(count) => repetition_index.insert(*c, count + 1),
+            None => repetition_index.insert(*c, 1),
         };
     });
 
     let total = repetition_index.len();
-    if total == 1 {
-        return HandType::FiveOfKind;
-    } else if total == 2 {
-        let max_repetition = repetition_index.values().max().unwrap().to_owned();
-        if max_repetition == 4 {
-            return HandType::FourOfKind;
-        } else {
-            return HandType::FullHouse;
+    match total {
+        1 => HandType::FiveOfKind,
+        2 => {
+            let max_repetition = *repetition_index.values().max().unwrap();
+            if max_repetition == 4 {
+                HandType::FourOfKind
+            } else {
+                HandType::FullHouse
+            }
         }
-    } else if total == 3 {
-        let max_repetition = repetition_index.values().max().unwrap().to_owned();
-        if max_repetition == 3 {
-            return HandType::ThreeOfKind;
-        } else {
-            return HandType::TwoPair;
+        3 => {
+            let max_repetition = *repetition_index.values().max().unwrap();
+            if max_repetition == 3 {
+                HandType::ThreeOfKind
+            } else {
+                HandType::TwoPair
+            }
         }
-    } else if total == 4 {
-        return HandType::OnePair;
+        4 => HandType::OnePair,
+        _ => HandType::HighCard,
     }
-
-    HandType::HighCard
-}
-
-fn get_card_strength(card: char) -> usize {
-    CARD_STRENGTH.iter().position(|&c| c == card).unwrap()
-}
-
-fn sort_hands(hands: &[Hand]) -> Vec<&Hand> {
-    let grouped_hands: Vec<Vec<&Hand>> = hands
-        .iter()
-        .sorted_by_key(|hand| &hand.hand_type)
-        .group_by(|hand| &hand.hand_type)
-        .into_iter()
-        .fold(Vec::new(), |mut acc, (_, group)| {
-            let grouped_items = group
-                .into_iter()
-                .sorted_by(|a, b| {
-                    for i in 0..a.cards.len() {
-                        let ac = get_card_strength(a.cards[i]);
-                        let bc = get_card_strength(b.cards[i]);
-                        match ac.cmp(&bc) {
-                            Ordering::Equal => continue,
-                            v => return v,
-                        }
-                    }
-
-                    Ordering::Equal
-                })
-                .collect();
-            acc.push(grouped_items);
-            acc
-        });
-
-    grouped_hands.into_iter().flatten().collect()
 }
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
-    let hands: Vec<Hand> = input.lines().map(Hand::parse).collect();
-    let sorted_hands = sort_hands(&hands);
+    let mut hands: Vec<Hand> = input.lines().map(Hand::parse).collect();
+    // let sorted_hands = sort_hands(hands);
+
+    hands.sort_by(|a, b| {
+        let type_ordering = a.hand_type.cmp(&b.hand_type);
+        if type_ordering != Ordering::Equal {
+            return type_ordering;
+        }
+
+        for i in 0..a.cards.len() {
+            let ac = CARD_STRENGTH.iter().position(|&c| c == a.cards[i]).unwrap();
+            let bc = CARD_STRENGTH.iter().position(|&c| c == b.cards[i]).unwrap();
+
+            let order = ac.cmp(&bc);
+            if let Ordering::Equal = order {
+                continue;
+            }
+            return order;
+        }
+
+        Ordering::Equal
+    });
 
     // dbg!(&sorted_hands);
-    let total = sorted_hands
+    let total = hands
         .iter()
         .enumerate()
         // .for_each(|(i, hand)| {
