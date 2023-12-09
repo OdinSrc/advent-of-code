@@ -14,24 +14,22 @@ fn parse(input: &str) -> Vec<Vec<i64>> {
 fn find_next_number(input: Vec<i64>) -> i64 {
     let mut output = Vec::new();
     get_diff_vec(input, &mut output);
-    output.reverse();
     let mut previous_number = 0;
     for v in output.iter_mut() {
-        v.reverse();
-        let last_number: i64 = v[0];
+        let last_number: i64 = v.to_owned();
         previous_number += last_number;
     }
     previous_number
 }
 
-fn get_diff_vec(input: Vec<i64>, output_vec: &mut Vec<Vec<i64>>) {
+fn get_diff_vec(input: Vec<i64>, output_vec: &mut Vec<i64>) {
     let next_input: Vec<i64> = input.windows(2).map(|w| w[1] - w[0]).collect();
     if next_input.iter().all(|&x| x == 0) {
-        output_vec.push(input);
+        output_vec.push(input.last().unwrap().to_owned());
         return;
     }
 
-    output_vec.push(input);
+    output_vec.push(input.last().unwrap().to_owned());
     get_diff_vec(next_input, output_vec)
 }
 
