@@ -18,7 +18,7 @@ fn find_next_number(input: Vec<i64>) -> i64 {
     for v in output.iter_mut() {
         v.reverse();
         let last_number: i64 = v[0];
-        previous_number = last_number + previous_number;
+        previous_number += last_number;
     }
     previous_number
 }
