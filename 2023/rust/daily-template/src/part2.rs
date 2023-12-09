@@ -1,8 +1,15 @@
-use crate::custom_error::AocError;
+use std::fmt::Display;
 
+pub fn run(_input: &str) -> impl Display {
+    let result = "";
+
+    result
+}
+
+use crate::custom_error::AocError;
 #[tracing::instrument]
 pub fn process(_input: &str) -> miette::Result<String, AocError> {
-    Ok("".to_string())
+    Ok(run(input).to_string())
 }
 
 #[cfg(test)]

@@ -1,15 +1,6 @@
-use crate::custom_error::AocError;
+use std::fmt::Display;
 
-fn parse(input: &str) -> Vec<Vec<i64>> {
-    input
-        .lines()
-        .map(|line| {
-            line.split_whitespace()
-                .map(|d| d.parse::<i64>().unwrap())
-                .collect::<Vec<i64>>()
-        })
-        .collect()
-}
+use crate::custom_error::AocError;
 
 fn find_next_number(input: Vec<i64>) -> i64 {
     let mut output = Vec::new();
@@ -35,13 +26,24 @@ fn get_diff_vec(input: Vec<i64>, output_vec: &mut Vec<i64>) {
     get_diff_vec(next_input, output_vec)
 }
 
-#[tracing::instrument]
-pub fn process(input: &str) -> miette::Result<String, AocError> {
-    let parsed = parse(input);
+fn run(input: &str) -> impl Display {
+    let parsed: Vec<Vec<i64>> = input
+        .lines()
+        .map(|line| {
+            line.split_whitespace()
+                .map(|d| d.parse::<i64>().unwrap())
+                .collect::<Vec<i64>>()
+        })
+        .collect();
 
     let result: i64 = parsed.into_iter().map(find_next_number).sum();
 
-    Ok(result.to_string())
+    result
+}
+
+#[tracing::instrument]
+pub fn process(input: &str) -> miette::Result<String, AocError> {
+    Ok(run(input).to_string())
 }
 
 #[cfg(test)]
