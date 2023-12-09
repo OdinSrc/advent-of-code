@@ -12,7 +12,8 @@ fn parse(input: &str) -> Vec<Vec<i64>> {
 }
 
 fn find_next_number(input: Vec<i64>) -> i64 {
-    let mut output = get_diff_vec(input);
+    let mut output = Vec::new();
+    get_diff_vec(input, &mut output);
     output.reverse();
     let mut previous_number = 0;
     for v in output.iter_mut() {
@@ -22,15 +23,15 @@ fn find_next_number(input: Vec<i64>) -> i64 {
     previous_number
 }
 
-fn get_diff_vec(input: Vec<i64>) -> Vec<Vec<i64>> {
+fn get_diff_vec(input: Vec<i64>, output_vec: &mut Vec<Vec<i64>>) {
     let next_input: Vec<i64> = input.windows(2).map(|w| w[1] - w[0]).collect();
     if next_input.iter().all(|&x| x == 0) {
-        return vec![input];
+        output_vec.push(input);
+        return;
     }
 
-    let mut output = vec![input];
-    output.extend(get_diff_vec(next_input));
-    output
+    output_vec.push(input);
+    get_diff_vec(next_input, output_vec)
 }
 
 #[tracing::instrument]
