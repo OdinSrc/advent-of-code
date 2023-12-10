@@ -3,39 +3,34 @@ use std::fmt::Display;
 use crate::custom_error::AocError;
 
 fn run(input: &str) -> impl Display {
-    let parsed: Vec<Vec<i64>> = input
+    let result: i64 = input
         .lines()
         .map(|line| {
             line.split_whitespace()
                 .map(|d| d.parse::<i64>().unwrap())
                 .collect::<Vec<i64>>()
         })
-        .collect();
-
-    let result: i64 = parsed.into_iter().map(find_next_number).sum();
+        .map(find_next_number)
+        .sum();
     result
 }
 
 fn find_next_number(input: Vec<i64>) -> i64 {
     let mut output = Vec::new();
-    get_diff_vec(input, &mut output);
-    let mut previous_number = 0;
-    for v in output.iter_mut() {
-        let last_number: i64 = v.to_owned();
-        previous_number += last_number;
-    }
-    previous_number
+    get_diff_vec(&input, &mut output);
+
+    output.into_iter().sum()
 }
 
-fn get_diff_vec(input: Vec<i64>, output_vec: &mut Vec<i64>) {
+fn get_diff_vec(input: &Vec<i64>, output_vec: &mut Vec<i64>) {
     let next_input: Vec<i64> = input.windows(2).map(|w| w[1] - w[0]).collect();
     if next_input.iter().all(|&x| x == 0) {
-        output_vec.push(input.last().unwrap().to_owned());
+        output_vec.push(*input.last().unwrap());
         return;
     }
 
-    output_vec.push(input.last().unwrap().to_owned());
-    get_diff_vec(next_input, output_vec)
+    output_vec.push(*input.last().unwrap());
+    get_diff_vec(&next_input, output_vec)
 }
 
 #[tracing::instrument]
