@@ -8,7 +8,7 @@ pub fn run(_input: &str) -> impl Display {
 
 use crate::custom_error::AocError;
 #[tracing::instrument]
-pub fn process(_input: &str) -> miette::Result<String, AocError> {
+pub fn process(input: &str) -> miette::Result<String, AocError> {
     Ok(run(input).to_string())
 }
 
