@@ -1,191 +1,266 @@
-use std::fmt::Display;
+use std::{collections::HashSet, fmt::Display};
 
-use std::collections::{HashSet, VecDeque};
-use std::ops::Add;
-use std::ops::Index;
+//Ref: https://nickymeuleman.netlify.app/garden/aoc2023-day10
 
-// Credits: https://github.com/believer/advent-of-code/tree/master/rust/2023
-
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-struct Position {
-    pub x: i32,
-    pub y: i32,
-}
-
-impl Position {
-    pub const fn new(x: i32, y: i32) -> Self {
-        Position { x, y }
-    }
-}
-
-impl Add for Position {
-    type Output = Position;
-
-    fn add(self, other: Self) -> Self {
-        Position::new(self.x + other.x, self.y + other.y)
-    }
-}
-
-const DIRECTION_UP: Position = Position::new(0, -1);
-const DIRECTION_DOWN: Position = Position::new(0, 1);
-const DIRECTION_LEFT: Position = Position::new(-1, 0);
-const DIRECTION_RIGHT: Position = Position::new(1, 0);
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum Pipe {
-    Vertical,
-    Horizontal,
-    NorthEast,
-    NorthWest,
-    SouthEast,
-    SouthWest,
+#[derive(PartialEq, Eq)]
+enum Tile {
+    // S is the starting position of the animal; there is a pipe on this tile, but your sketch doesn't show what shape the pipe has.
     Start,
-    NoPipe,
+    // . is ground; there is no pipe in this tile.
+    Empty,
+    // | is a vertical pipe connecting north and south.
+    NorthSouth,
+    // - is a horizontal pipe connecting west and and.
+    EastWest,
+    // L is a 90-degree bend connecting north and east.
+    NorthEast,
+    // J is a 90-degree bend connecting north and west.
+    NorthWest,
+    // 7 is a 90-degree bend connecting south and west.
+    SouthWest,
+    // F is a 90-degree bend connecting south and east.
+    SouthEast,
 }
 
-impl Pipe {
-    fn is_valid_start(&self, next_pipe: &Pipe, direction: &Position) -> bool {
-        if !matches!(self, Pipe::Start) {
-            return true;
-        };
-
-        matches!(
-            (next_pipe, direction),
-            (Pipe::Horizontal, &DIRECTION_RIGHT)
-                | (Pipe::Horizontal, &DIRECTION_LEFT)
-                | (Pipe::Vertical, &DIRECTION_UP)
-                | (Pipe::Vertical, &DIRECTION_DOWN)
-                | (Pipe::NorthEast, &DIRECTION_LEFT)
-                | (Pipe::NorthEast, &DIRECTION_DOWN)
-                | (Pipe::NorthWest, &DIRECTION_DOWN)
-                | (Pipe::NorthWest, &DIRECTION_RIGHT)
-                | (Pipe::SouthEast, &DIRECTION_LEFT)
-                | (Pipe::SouthEast, &DIRECTION_UP)
-                | (Pipe::SouthWest, &DIRECTION_RIGHT)
-                | (Pipe::SouthWest, &DIRECTION_UP)
-        )
-    }
-}
-
-impl From<u8> for Pipe {
+impl From<u8> for Tile {
     fn from(value: u8) -> Self {
         match value {
-            b'|' => Pipe::Vertical,
-            b'-' => Pipe::Horizontal,
-            b'L' => Pipe::NorthEast,
-            b'J' => Pipe::NorthWest,
-            b'F' => Pipe::SouthEast,
-            b'7' => Pipe::SouthWest,
-            b'S' => Pipe::Start,
-            b'.' => Pipe::NoPipe,
-            _ => panic!("Invalid pipe: {}", value),
+            b'.' => Self::Empty,
+            b'S' => Self::Start,
+            b'|' => Self::NorthSouth,
+            b'-' => Self::EastWest,
+            b'L' => Self::NorthEast,
+            b'J' => Self::NorthWest,
+            b'7' => Self::SouthWest,
+            b'F' => Self::SouthEast,
+            _ => unreachable!("Blackhole!"),
         }
     }
 }
 
-#[derive(Debug, Clone)]
-struct Grid {
-    pub width: i32,
-    pub height: i32,
-    pub data: Vec<Pipe>,
+use Tile::*;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct Coord {
+    row_idx: usize,
+    col_idx: usize,
 }
 
-fn directions(pipe: &Pipe) -> Vec<Position> {
-    match pipe {
-        Pipe::Vertical => vec![DIRECTION_UP, DIRECTION_DOWN],
-        Pipe::Horizontal => vec![DIRECTION_LEFT, DIRECTION_RIGHT],
-        Pipe::NorthEast => vec![DIRECTION_UP, DIRECTION_RIGHT],
-        Pipe::NorthWest => vec![DIRECTION_UP, DIRECTION_LEFT],
-        Pipe::SouthEast => vec![DIRECTION_DOWN, DIRECTION_RIGHT],
-        Pipe::SouthWest => vec![DIRECTION_DOWN, DIRECTION_LEFT],
-        Pipe::Start => vec![
-            DIRECTION_UP,
-            DIRECTION_RIGHT,
-            DIRECTION_DOWN,
-            DIRECTION_LEFT,
-        ],
-        Pipe::NoPipe => vec![],
+impl Coord {
+    fn new(row_idx: usize, col_idx: usize) -> Self {
+        Self { row_idx, col_idx }
+    }
+
+    fn valid_neighbours(&self, map: &[Vec<Tile>]) -> Vec<Coord> {
+        let mut neighbours = vec![];
+        let max_height = map.len() - 1;
+        let max_width = map[0].len() - 1;
+
+        match map[self.row_idx][self.col_idx] {
+            Empty => (),
+            Start => {
+                // north
+                if self.row_idx > 0 {
+                    let top_row = self.row_idx - 1;
+                    let tile = &map[top_row][self.col_idx];
+                    if matches!(tile, NorthSouth | SouthEast | SouthWest) {
+                        neighbours.push(Coord::new(top_row, self.col_idx));
+                    }
+                }
+
+                //south
+                if self.row_idx < max_height {
+                    let bottom_row = self.row_idx + 1;
+                    let tile = &map[bottom_row][self.col_idx];
+                    if matches!(tile, NorthSouth | NorthEast | NorthWest) {
+                        neighbours.push(Coord::new(bottom_row, self.col_idx));
+                    }
+                }
+
+                //West
+                if self.col_idx > 0 {
+                    let left_col = self.col_idx - 1;
+                    let tile = &map[self.row_idx][left_col];
+                    if matches!(tile, EastWest | NorthEast | SouthEast) {
+                        neighbours.push(Coord::new(self.row_idx, left_col));
+                    }
+                }
+
+                //East
+                if self.col_idx < max_width {
+                    let right_col = self.col_idx + 1;
+                    let tile = &map[self.row_idx][right_col];
+                    if matches!(tile, EastWest | NorthWest | SouthWest) {
+                        neighbours.push(Coord::new(self.row_idx, right_col));
+                    }
+                }
+            }
+            NorthSouth => {
+                //north
+                if self.row_idx > 0 {
+                    let top_row = self.row_idx - 1;
+                    let tile = &map[top_row][self.col_idx];
+                    if matches!(tile, NorthSouth | SouthWest | SouthEast | Start) {
+                        neighbours.push(Coord::new(top_row, self.col_idx));
+                    }
+                }
+
+                //south
+                if self.row_idx < max_height {
+                    let bottom_row = self.row_idx + 1;
+                    let tile = &map[bottom_row][self.col_idx];
+                    if matches!(tile, NorthSouth | NorthEast | NorthWest) {
+                        neighbours.push(Coord::new(bottom_row, self.col_idx));
+                    }
+                }
+            }
+            EastWest => {
+                //West
+                if self.col_idx > 0 {
+                    let left_col = self.col_idx - 1;
+                    let tile = &map[self.row_idx][left_col];
+                    if matches!(tile, EastWest | SouthEast | NorthEast | Start) {
+                        neighbours.push(Coord::new(self.row_idx, left_col));
+                    }
+                }
+
+                //East
+                if self.col_idx < max_height {
+                    let right_col = self.col_idx + 1;
+                    let tile = &map[self.row_idx][right_col];
+                    if matches!(tile, EastWest | SouthWest | NorthWest | Start) {
+                        neighbours.push(Coord::new(self.row_idx, right_col));
+                    }
+                }
+            }
+            NorthEast => {
+                //north
+                if self.row_idx > 0 {
+                    let top_row = self.row_idx - 1;
+                    let tile = &map[top_row][self.col_idx];
+                    if matches!(tile, NorthSouth | SouthWest | SouthEast | Start) {
+                        neighbours.push(Coord::new(top_row, self.col_idx));
+                    }
+                }
+
+                //East
+                if self.col_idx < max_height {
+                    let right_col = self.col_idx + 1;
+                    let tile = &map[self.row_idx][right_col];
+                    if matches!(tile, EastWest | SouthWest | NorthWest | Start) {
+                        neighbours.push(Coord::new(self.row_idx, right_col));
+                    }
+                }
+            }
+            NorthWest => {
+                //north
+                if self.row_idx > 0 {
+                    let top_row = self.row_idx - 1;
+                    let tile = &map[top_row][self.col_idx];
+                    if matches!(tile, NorthSouth | SouthWest | SouthEast | Start) {
+                        neighbours.push(Coord::new(top_row, self.col_idx));
+                    }
+                }
+
+                //West
+                if self.col_idx > 0 {
+                    let left_col = self.col_idx - 1;
+                    let tile = &map[self.row_idx][left_col];
+                    if matches!(tile, EastWest | SouthEast | NorthEast | Start) {
+                        neighbours.push(Coord::new(self.row_idx, left_col));
+                    }
+                }
+            }
+            SouthWest => {
+                //south
+                if self.row_idx < max_height {
+                    let bottom_row = self.row_idx + 1;
+                    let tile = &map[bottom_row][self.col_idx];
+                    if matches!(tile, NorthSouth | NorthEast | NorthWest) {
+                        neighbours.push(Coord::new(bottom_row, self.col_idx));
+                    }
+                }
+
+                //West
+                if self.col_idx > 0 {
+                    let left_col = self.col_idx - 1;
+                    let tile = &map[self.row_idx][left_col];
+                    if matches!(tile, EastWest | SouthEast | NorthEast | Start) {
+                        neighbours.push(Coord::new(self.row_idx, left_col));
+                    }
+                }
+            }
+            SouthEast => {
+                //south
+                if self.row_idx < max_height {
+                    let bottom_row = self.row_idx + 1;
+                    let tile = &map[bottom_row][self.col_idx];
+                    if matches!(tile, NorthSouth | NorthEast | NorthWest) {
+                        neighbours.push(Coord::new(bottom_row, self.col_idx));
+                    }
+                }
+
+                //East
+                if self.col_idx < max_height {
+                    let right_col = self.col_idx + 1;
+                    let tile = &map[self.row_idx][right_col];
+                    if matches!(tile, EastWest | SouthWest | NorthWest | Start) {
+                        neighbours.push(Coord::new(self.row_idx, right_col));
+                    }
+                }
+            }
+        }
+
+        neighbours
     }
 }
 
-impl From<&str> for Grid {
-    fn from(value: &str) -> Self {
-        let data = value
-            .lines()
-            .flat_map(|line| line.bytes().filter_map(|b| Pipe::from(b).into()))
-            .collect::<Vec<_>>();
-        let width = value.lines().next().unwrap_or_default().len() as i32;
-        let height = value.lines().count() as i32;
+fn parse(input: &str) -> (Vec<Vec<Tile>>, Coord) {
+    let mut start = Coord::new(0, 0);
 
-        Grid {
-            width,
-            height,
-            data: data,
+    let map = input
+        .lines()
+        .enumerate()
+        .map(|(row_idx, line)| {
+            line.bytes()
+                .enumerate()
+                .map(|(col_idx, b)| {
+                    let tile = Tile::from(b);
+                    if tile == Tile::Start {
+                        start = Coord::new(row_idx, col_idx);
+                    }
+                    tile
+                })
+                .collect()
+        })
+        .collect();
+
+    (map, start)
+}
+
+fn build_loop(start: Coord, map: &[Vec<Tile>]) -> HashSet<Coord> {
+    let mut loop_coords = HashSet::new();
+
+    loop_coords.insert(start);
+    let mut to_visit = start.valid_neighbours(map);
+
+    while let Some(curr_pos) = to_visit.pop() {
+        for neighbour in curr_pos.valid_neighbours(map) {
+            if !loop_coords.contains(&neighbour) {
+                to_visit.push(neighbour);
+                loop_coords.insert(neighbour);
+            }
         }
     }
-}
 
-impl Grid {
-    fn find(&self, value: Pipe) -> Option<Position> {
-        self.data
-            .iter()
-            .position(|&x| x == value)
-            .map(|i| Position::new((i as i32) % self.width, (i as i32) / self.width))
-    }
-}
-
-impl Index<Position> for Grid {
-    type Output = Pipe;
-
-    #[inline]
-    fn index(&self, point: Position) -> &Self::Output {
-        &self.data[(self.width * point.y + point.x) as usize]
-    }
+    loop_coords
 }
 
 pub fn run(input: &str) -> impl Display {
-    let grid: Grid = Grid::from(input);
-    let start = grid.find(Pipe::Start).unwrap();
+    let (map, start) = parse(input);
 
-    let mut visited: HashSet<Position> = HashSet::new();
-    let mut queue = VecDeque::new();
-
-    // Furthest point and steps
-    let mut furthest = 0;
-
-    // Add the starting point to the queue
-    queue.push_back((start, 0));
-
-    // While there are still points to visit keep going through the pipe
-    while let Some((current_point, steps)) = queue.pop_front() {
-        let current_tile = grid[current_point];
-
-        visited.insert(current_point);
-
-        for direction in directions(&current_tile) {
-            let new_point = current_point + direction;
-
-            // Check if the next tile is a valid start direction
-            if !current_tile.is_valid_start(&grid[new_point], &direction) {
-                continue;
-            }
-
-            // If we haven't seen the point before, create the next point and steps.
-            // If it is the furthest point, update the it.
-            // Add the next point to the queue
-            if !visited.contains(&new_point) {
-                let next_steps = steps + 1;
-
-                if furthest == 0 || next_steps > furthest {
-                    furthest = next_steps
-                }
-
-                queue.push_back((new_point, next_steps));
-            }
-        }
-    }
-
-    furthest
+    let loop_cords = build_loop(start, &map);
+    loop_cords.len() / 2
 }
 
 use crate::custom_error::AocError;
