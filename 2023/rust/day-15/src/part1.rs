@@ -2,10 +2,10 @@ use std::fmt::Display;
 
 macro_rules! str_to_single_number {
     ($input: expr) => {
-        $input.bytes().fold(0, |current_value, b| {
-            let c = current_value + b as u64;
-            (c + (c << 4)) & 0xFF
-        })
+        $input
+            .bytes()
+            .fold(0, |current_value, b| (current_value + b as u64) * 17)
+            & 0xFF
     };
 }
 pub fn run(input: &str) -> impl Display {

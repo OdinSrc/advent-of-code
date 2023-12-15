@@ -4,8 +4,8 @@ macro_rules! str_to_single_number {
     ($input: expr) => {
         $input.bytes().fold(0, |current_value, b| {
             let c = current_value + b as usize;
-            (c + (c << 4)) & 0xFF
-        })
+            (c + (c << 4))
+        }) & 0xFF
     };
 }
 
