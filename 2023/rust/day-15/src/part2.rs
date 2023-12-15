@@ -1,42 +1,62 @@
 use std::fmt::Display;
 
-macro_rules! str_to_single_number {
+macro_rules! hash {
     ($input: expr) => {
-        $input.bytes().fold(0, |current_value, b| {
-            let c = current_value + b as usize;
-            (c + (c << 4))
+        $input.bytes().fold(0, |current_value: u8, b| {
+            current_value.wrapping_add(b).wrapping_mul(17)
+
+            // (c.wrapping_add(c << 4))
         }) & 0xFF
     };
 }
 
+struct Lens<'a> {
+    label: &'a str,
+    focal: u8,
+}
+
+// Code cleanup based on https://nickymeuleman.netlify.app/garden/aoc2023-day15
+enum Instruction<'a> {
+    Add(Lens<'a>),
+    Remove(&'a str),
+}
+
+impl<'a> Instruction<'a> {
+    fn new(input: &'a str) -> Self {
+        if let Some(label) = input.strip_suffix('-') {
+            Self::Remove(label)
+        } else {
+            let (label, focal) = input.split_once('=').unwrap();
+            let focal = focal.parse().unwrap();
+            let lens = Lens { label, focal };
+            Self::Add(lens)
+        }
+    }
+}
+
 pub fn run(input: &str) -> impl Display {
     let input = input.trim();
-    let mut boxes: Vec<Vec<(&str, usize)>> = vec![Vec::new(); 256];
+    const BOX: Vec<Lens> = Vec::new();
+    let mut boxes = [BOX; 256];
+
     input
         .split(',')
-        .for_each(|line| match line.split_once('=') {
-            Some((label, focal)) => {
-                let box_val = str_to_single_number!(label);
+        .map(Instruction::new)
+        .for_each(|instr| match instr {
+            Instruction::Add(lens) => {
+                let hash = hash!(lens.label);
 
-                let b = boxes
-                    .get_mut(box_val)
-                    .unwrap_or_else(|| panic!("Invalid box num: {box_val}"));
-                let label_pos = b.iter().position(|(l1, _)| *l1 == label);
+                let lenses = &mut boxes[hash as usize];
 
-                if let Some(label_pos) = label_pos {
-                    let label_element = b.get_mut(label_pos).unwrap();
-                    *label_element = (label, focal.parse().unwrap());
+                if let Some(old) = lenses.iter_mut().find(|item| lens.label == item.label) {
+                    *old = lens;
                 } else {
-                    b.push((label, focal.parse().unwrap()));
+                    lenses.push(lens);
                 }
             }
-            _ => {
-                let label: &str = &line[0..line.len() - 1];
-
-                let box_val = str_to_single_number!(label);
-
-                let b = boxes.get_mut(box_val).unwrap();
-                b.retain(|(l1, _)| *l1 != label);
+            Instruction::Remove(label) => {
+                let hash = hash!(label);
+                boxes[hash as usize].retain(|item| item.label != label);
             }
         });
 
@@ -51,7 +71,7 @@ pub fn run(input: &str) -> impl Display {
 
             b.iter()
                 .enumerate()
-                .map(|(i, (_, focal))| (i + 1) * focal * box_num)
+                .map(|(i, lens)| (i + 1) * lens.focal as usize * box_num)
                 .sum::<usize>()
         })
         .sum::<usize>()
@@ -69,9 +89,6 @@ mod tests {
 
     #[test]
     fn test_solution() -> miette::Result<()> {
-        // let input = "HASH";
-        // assert_eq!(52, str_to_single_number(input));
-
         let input = "rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7";
         assert_eq!("145", process(input)?);
         Ok(())
