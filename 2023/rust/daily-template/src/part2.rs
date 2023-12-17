@@ -1,9 +1,7 @@
 use std::fmt::Display;
 
 pub fn run(_input: &str) -> impl Display {
-    let result = "";
-
-    result
+    ""
 }
 
 use crate::custom_error::AocError;
